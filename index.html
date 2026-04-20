@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Streat – CP Food Walk</title>
+
+<style>
+:root {
+    --bg: #121212;
+    --card: #1e1e1e;
+    --card-alt: #2c2c2c;
+    --text: #fff;
+    --sub: #a0a0a0;
+    --accent: #ff9800;
+    --success: #4caf50;
+}
+
+* {
+    margin:0; padding:0; box-sizing:border-box;
+    font-family:-apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    display:flex;
+    justify-content:center;
+}
+
+#app {
+    width:100%;
+    max-width:480px;
+    padding:20px;
+}
+
+/* HEADER */
+.header {
+    margin-bottom:10px;
+}
+.title { font-size:20px; font-weight:700; }
+.subtitle { font-size:13px; color:var(--sub); }
+
+/* DASHBOARD */
+.dashboard {
+    position: sticky;
+    top: 10px;
+    z-index: 10;
+    background: var(--card);
+    border-radius:16px;
+    padding:16px;
+    margin-bottom:16px;
+    box-shadow:0 4px 20px rgba(0,0,0,0.4);
+}
+
+.stats {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.stat {
+    display:flex;
+    flex-direction:column;
+}
+.stat-value { font-size:20px; font-weight:700; color:var(--accent); }
+.stat-value.money { color:var(--success); }
+.stat-label { font-size:11px; color:var(--sub); }
+
+.reset-btn {
+    border:1px solid var(--sub);
+    background:transparent;
+    color:var(--sub);
+    padding:6px 10px;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+.next {
+    background: var(--card-alt);
+    padding:10px;
+    border-radius:8px;
+    margin-top:10px;
+    font-size:13px;
+}
+.next span { color:var(--accent); font-weight:600; }
+
+.progress {
+    height:6px;
+    background:#333;
+    border-radius:6px;
+    margin-top:10px;
+    overflow:hidden;
+}
+.progress-fill {
+    height:100%;
+    width:0%;
+    background:var(--accent);
+    transition: width 0.4s ease;
+}
+
+/* TIMELINE */
+.timeline {
+    position:relative;
+    padding-left:20px;
+}
+.timeline::before {
+    content:'';
+    position:absolute;
+    left:7px;
+    top:0;
+    bottom:0;
+    width:2px;
+    background:var(--card-alt);
+}
+
+.stop {
+    position:relative;
+    margin-bottom:18px;
+}
+
+.stop::before {
+    content:'';
+    position:absolute;
+    left:-19px;
+    top:16px;
+    width:14px;
+    height:14px;
+    border-radius:50%;
+    background:var(--card-alt);
+    border:2px solid var(--bg);
+}
+
+.stop.visited::before {
+    background:var(--success);
+}
+
+/* CARD */
+.card {
+    background:var(--card);
+    border-radius:14px;
+    padding:14px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    border:1px solid transparent;
+    transition:0.3s;
+}
+
+.card.next {
+    border:1px solid var(--accent);
+    background:var(--card-alt);
+    transform:scale(1.02);
+    box-shadow:0 0 12px rgba(255,152,0,0.3);
+}
+
+.card-content { flex:1; }
+
+.time { font-size:11px; color:var(--accent); font-weight:600; }
+.place { font-size:16px; font-weight:700; }
+.dish { font-size:13px; }
+
+.tip { font-size:12px; color:var(--sub); margin-top:4px; }
+
+.price {
+    font-size:11px;
+    background:var(--card-alt);
+    color:var(--success);
+    padding:2px 6px;
+    border-radius:10px;
+    margin-left:6px;
+}
+
+.walk {
+    font-size:11px;
+    color:var(--sub);
+    margin-left:16px;
+    opacity:0.6;
+}
+
+/* CHECKBOX */
+input[type="checkbox"] {
+    width:26px; height:26px;
+    border:2px solid var(--sub);
+    border-radius:6px;
+    appearance:none;
+    cursor:pointer;
+}
+input[type="checkbox"]:checked {
+    background:var(--success);
+    border-color:var(--success);
+}
+input[type="checkbox"]:checked::after {
+    content:"✓";
+    color:#fff;
+    font-weight:bold;
+    position:absolute;
+    margin-left:6px;
+    margin-top:2px;
+}
+
+.stop.visited .place,
+.stop.visited .dish {
+    text-decoration:line-through;
+    opacity:0.6;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="app">
+
+<div class="header">
+    <div class="title">CP Food Walk</div>
+    <div class="subtitle">2.5 hour street plan</div>
+</div>
+
+<div class="dashboard">
+    <div class="stats">
+        <div class="stat">
+            <div class="stat-value" id="count">0/5</div>
+            <div class="stat-label">Stops</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value money" id="money">₹0</div>
+            <div class="stat-label">Spent</div>
+        </div>
+        <button class="reset-btn" onclick="reset()">Reset</button>
+    </div>
+
+    <div class="next">Next: <span id="next"></span></div>
+
+    <div class="progress">
+        <div class="progress-fill" id="progress"></div>
+    </div>
+</div>
+
+<div class="timeline" id="timeline"></div>
+
+</div>
+
+<script>
+
+const stops = [
+{ id:1, time:"4:00 PM", place:"Pappu Chaat", dish:"Aloo Tikki", price:80, tip:"Crispy start", walk:"10 mins", visited:false },
+{ id:2, time:"4:20 PM", place:"Embassy Snack", dish:"Samosa", price:80, tip:"Spicy bite", walk:"10 mins", visited:false },
+{ id:3, time:"4:45 PM", place:"Nizam’s Roll", dish:"Egg Mutton Roll", price:300, tip:"Main stop (share)", walk:"5 mins", visited:false },
+{ id:4, time:"5:10 PM", place:"Shake Square", dish:"Butterscotch Shake", price:150, tip:"Cool down", walk:"5 mins", visited:false },
+{ id:5, time:"5:25 PM", place:"Odeon Paan", dish:"Fire Paan", price:50, tip:"Digestif end", walk:null, visited:false }
+];
+
+function render() {
+    const timeline = document.getElementById("timeline");
+    timeline.innerHTML = "";
+
+    let spent = 0;
+    let visited = stops.filter(s=>s.visited).length;
+    let nextStop = stops.find(s=>!s.visited);
+
+    stops.forEach(s=>{
+        if(s.visited) spent += s.price;
+
+        const isNext = nextStop && nextStop.id === s.id;
+
+        const el = document.createElement("div");
+        el.className = `stop ${s.visited?"visited":""}`;
+
+        el.innerHTML = `
+        <div class="card ${isNext?"next":""}">
+            <div class="card-content">
+                <div class="time">${s.time}</div>
+                <div class="place">${s.place}</div>
+                <div class="dish">${s.dish} <span class="price">₹${s.price}</span></div>
+                <div class="tip">${s.tip}</div>
+            </div>
+            <input type="checkbox" ${s.visited?"checked":""} onchange="toggle(${s.id})">
+        </div>
+        ${s.walk ? `<div class="walk">→ ${s.walk} walk</div>` : ""}
+        `;
+
+        timeline.appendChild(el);
+    });
+
+    document.getElementById("count").innerText = `${visited}/${stops.length}`;
+    document.getElementById("money").innerText = `₹${spent}`;
+    document.getElementById("progress").style.width = `${(visited/stops.length)*100}%`;
+
+    document.getElementById("next").innerText =
+        nextStop ? `${nextStop.place} (${nextStop.time})` : "Done 🎉";
+}
+
+function toggle(id){
+    const s = stops.find(x=>x.id===id);
+    s.visited = !s.visited;
+    render();
+}
+
+function reset(){
+    stops.forEach(s=>s.visited=false);
+    render();
+}
+
+render();
+
+</script>
+
+</body>
+</html>
