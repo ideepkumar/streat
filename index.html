@@ -1,310 +1,1002 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Streat – CP Food Walk</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delhi Food Walk Planner</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --surface-alt: #2c2c2c;
+            --surface-hover: #333333;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --accent-color: #ff9800;
+            --accent-light: rgba(255, 152, 0, 0.15);
+            --success-color: #4caf50;
+            --success-light: rgba(76, 175, 80, 0.15);
+            --tag-color: #2196f3;
+            --tag-light: rgba(33, 150, 243, 0.15);
+        }
 
-<style>
-:root {
-    --bg: #121212;
-    --card: #1e1e1e;
-    --card-alt: #2c2c2c;
-    --text: #fff;
-    --sub: #a0a0a0;
-    --accent: #ff9800;
-    --success: #4caf50;
-}
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-* {
-    margin:0; padding:0; box-sizing:border-box;
-    font-family:-apple-system, BlinkMacSystemFont, sans-serif;
-}
+        html {
+            scroll-behavior: smooth;
+        }
 
-body {
-    background: var(--bg);
-    color: var(--text);
-    display:flex;
-    justify-content:center;
-}
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-y: scroll;
+        }
 
-#app {
-    width:100%;
-    max-width:480px;
-    padding:20px;
-}
+        #app {
+            width: 100%;
+            max-width: 480px; 
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+        }
 
-/* HEADER */
-.header {
-    margin-bottom:10px;
-}
-.title { font-size:20px; font-weight:700; }
-.subtitle { font-size:13px; color:var(--sub); }
+        /* --- Animations --- */
+        @keyframes slideFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
 
-/* DASHBOARD */
-.dashboard {
-    position: sticky;
-    top: 10px;
-    z-index: 10;
-    background: var(--card);
-    border-radius:16px;
-    padding:16px;
-    margin-bottom:16px;
-    box-shadow:0 4px 20px rgba(0,0,0,0.4);
-}
+        .view-active {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            animation: slideFadeIn 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
 
-.stats {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}
+        .hidden {
+            display: none !important;
+        }
 
-.stat {
-    display:flex;
-    flex-direction:column;
-}
-.stat-value { font-size:20px; font-weight:700; color:var(--accent); }
-.stat-value.money { color:var(--success); }
-.stat-label { font-size:11px; color:var(--sub); }
+        /* --- Home Header & Quick Picker --- */
+        .page-header {
+            margin-bottom: 4px;
+        }
+        
+        .page-header h1 {
+            font-size: 28px;
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
+        }
 
-.reset-btn {
-    border:1px solid var(--sub);
-    background:transparent;
-    color:var(--sub);
-    padding:6px 10px;
-    border-radius:6px;
-    cursor:pointer;
-}
+        .page-header p {
+            color: var(--text-secondary);
+            font-size: 15px;
+            margin-bottom: 16px;
+        }
 
-.next {
-    background: var(--card-alt);
-    padding:10px;
-    border-radius:8px;
-    margin-top:10px;
-    font-size:13px;
-}
-.next span { color:var(--accent); font-weight:600; }
+        .quick-picker {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
 
-.progress {
-    height:6px;
-    background:#333;
-    border-radius:6px;
-    margin-top:10px;
-    overflow:hidden;
-}
-.progress-fill {
-    height:100%;
-    width:0%;
-    background:var(--accent);
-    transition: width 0.4s ease;
-}
+        .picker-btn {
+            background-color: var(--surface-color);
+            border: 1px solid var(--surface-alt);
+            color: var(--text-primary);
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
 
-/* TIMELINE */
-.timeline {
-    position:relative;
-    padding-left:20px;
-}
-.timeline::before {
-    content:'';
-    position:absolute;
-    left:7px;
-    top:0;
-    bottom:0;
-    width:2px;
-    background:var(--card-alt);
-}
+        .picker-btn:hover {
+            background-color: var(--surface-hover);
+        }
 
-.stop {
-    position:relative;
-    margin-bottom:18px;
-}
+        .picker-btn:active {
+            transform: scale(0.97);
+            background-color: var(--accent-light);
+            border-color: var(--accent-color);
+        }
 
-.stop::before {
-    content:'';
-    position:absolute;
-    left:-19px;
-    top:16px;
-    width:14px;
-    height:14px;
-    border-radius:50%;
-    background:var(--card-alt);
-    border:2px solid var(--bg);
-}
+        /* --- Home View (Cards) --- */
+        .home-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
 
-.stop.visited::before {
-    background:var(--success);
-}
+        .walk-card {
+            background-color: var(--surface-color);
+            border-radius: 20px;
+            padding: 22px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            border: 2px solid transparent; /* Prepare for highlight */
+            transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
 
-/* CARD */
-.card {
-    background:var(--card);
-    border-radius:14px;
-    padding:14px;
-    display:flex;
-    align-items:center;
-    gap:12px;
-    border:1px solid transparent;
-    transition:0.3s;
-}
+        .walk-card:hover {
+            background-color: var(--surface-hover);
+        }
 
-.card.next {
-    border:1px solid var(--accent);
-    background:var(--card-alt);
-    transform:scale(1.02);
-    box-shadow:0 0 12px rgba(255,152,0,0.3);
-}
+        .walk-card:active {
+            transform: scale(0.98);
+        }
 
-.card-content { flex:1; }
+        .walk-card.highlight {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px var(--accent-light);
+            animation: pulse-border 1.5s ease-out;
+        }
 
-.time { font-size:11px; color:var(--accent); font-weight:600; }
-.place { font-size:16px; font-weight:700; }
-.dish { font-size:13px; }
+        @keyframes pulse-border {
+            0% { border-color: transparent; }
+            50% { border-color: var(--accent-color); }
+            100% { border-color: transparent; }
+        }
 
-.tip { font-size:12px; color:var(--sub); margin-top:4px; }
+        .walk-tag {
+            align-self: flex-start;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
 
-.price {
-    font-size:11px;
-    background:var(--card-alt);
-    color:var(--success);
-    padding:2px 6px;
-    border-radius:10px;
-    margin-left:6px;
-}
+        .tag-blue { background-color: var(--tag-light); color: #64b5f6; }
+        .tag-green { background-color: var(--success-light); color: #81c784; }
+        .tag-orange { background-color: var(--accent-light); color: #ffb74d; }
 
-.walk {
-    font-size:11px;
-    color:var(--sub);
-    margin-left:16px;
-    opacity:0.6;
-}
+        .walk-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
 
-/* CHECKBOX */
-input[type="checkbox"] {
-    width:26px; height:26px;
-    border:2px solid var(--sub);
-    border-radius:6px;
-    appearance:none;
-    cursor:pointer;
-}
-input[type="checkbox"]:checked {
-    background:var(--success);
-    border-color:var(--success);
-}
-input[type="checkbox"]:checked::after {
-    content:"✓";
-    color:#fff;
-    font-weight:bold;
-    position:absolute;
-    margin-left:6px;
-    margin-top:2px;
-}
+        .walk-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
 
-.stop.visited .place,
-.stop.visited .dish {
-    text-decoration:line-through;
-    opacity:0.6;
-}
+        .walk-meta {
+            display: flex;
+            gap: 16px;
+            margin-top: 4px;
+            padding-top: 14px;
+            border-top: 1px solid var(--surface-alt);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        
+        .walk-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
 
-</style>
+        /* --- Navigation & Itinerary Header --- */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .back-btn {
+            background: var(--surface-alt);
+            border: none;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background-color 0.2s;
+        }
+
+        .back-btn:active {
+            background-color: #444;
+        }
+
+        .itin-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        /* --- Guided Experience Info Pills --- */
+        .guide-info {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .info-pill {
+            background-color: var(--surface-color);
+            border: 1px solid var(--surface-alt);
+            border-radius: 12px;
+            padding: 12px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 4px;
+        }
+
+        .info-val {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .info-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* --- Dashboard Header --- */
+        .dashboard {
+            background-color: var(--surface-color);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .dash-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-group {
+            display: flex;
+            gap: 24px;
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--accent-color);
+        }
+
+        .stat-value.money {
+            color: var(--success-color);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+
+        .next-stop-container {
+            background-color: var(--surface-alt);
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .next-stop-container span {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        .reset-btn {
+            background-color: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--surface-alt);
+            padding: 8px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .reset-btn:active {
+            background-color: var(--surface-alt);
+            color: var(--text-primary);
+        }
+
+        /* --- Progress Bar --- */
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background-color: var(--surface-alt);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 2px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: var(--accent-color);
+            border-radius: 3px;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* --- Start Walk Button --- */
+        .start-walk-btn {
+            background-color: var(--accent-color);
+            color: #000;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            text-align: center;
+            margin-top: 4px;
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+        }
+
+        .start-walk-btn:active {
+            transform: scale(0.98);
+            background-color: #e68a00;
+        }
+
+        /* --- Timeline --- */
+        .timeline {
+            position: relative;
+            padding-left: 24px;
+            margin-bottom: 20px;
+            padding-top: 10px; /* Space for smooth scroll target */
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            bottom: 0;
+            left: 9px;
+            width: 2px;
+            background-color: var(--surface-alt);
+        }
+
+        .stop {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .stop::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: -21px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background-color: var(--surface-alt);
+            border: 2px solid var(--bg-color);
+            z-index: 1;
+            transition: background-color 0.3s;
+        }
+
+        .stop.visited::before {
+            background-color: var(--success-color);
+        }
+
+        /* Stop Card */
+        .card {
+            background-color: var(--surface-color);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .stop.visited .card {
+            opacity: 0.45;
+        }
+
+        .card.next-up {
+            background-color: var(--surface-color);
+            border: 1px solid var(--accent-color);
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.15);
+            transform: scale(1.02);
+            animation: pulse-glow 2.5s infinite;
+        }
+        
+        .card.scroll-target {
+            border-color: var(--accent-color);
+            animation: scroll-flash 1.5s ease-out;
+        }
+
+        @keyframes scroll-flash {
+            0% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.6); background-color: var(--surface-alt); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 152, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); background-color: var(--surface-color); }
+        }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 152, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
+        }
+
+        .card-content {
+            flex-grow: 1;
+        }
+
+        .time {
+            font-size: 12px;
+            color: var(--accent-color);
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .place {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+        
+        .dish-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .dish {
+            font-size: 15px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .price-badge {
+            font-size: 12px;
+            background-color: var(--surface-alt);
+            color: var(--success-color);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 700;
+        }
+
+        .tip {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .stop.visited .place,
+        .stop.visited .dish {
+            text-decoration: line-through;
+        }
+
+        /* Checkbox */
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+        }
+
+        input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 32px;
+            height: 32px;
+            border: 2px solid var(--text-secondary);
+            border-radius: 8px;
+            background-color: transparent;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        input[type="checkbox"]:checked {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+            transform: scale(1.1);
+        }
+
+        input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .walk-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 14px;
+            margin-left: 20px;
+            opacity: 0.7;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* --- Completion Card --- */
+        .completion-card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--success-color);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            margin-top: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(76, 175, 80, 0.15);
+            animation: slideFadeIn 0.5s ease forwards;
+        }
+
+        .completion-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+
+        .completion-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .completion-stats {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .completion-stats span {
+            color: var(--success-color);
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .try-another-btn {
+            background-color: var(--surface-alt);
+            color: var(--text-primary);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .try-another-btn:active {
+            background-color: #444;
+            transform: scale(0.98);
+        }
+
+    </style>
 </head>
-
 <body>
 
-<div id="app">
-
-<div class="header">
-    <div class="title">CP Food Walk</div>
-    <div class="subtitle">2.5 hour street plan</div>
-</div>
-
-<div class="dashboard">
-    <div class="stats">
-        <div class="stat">
-            <div class="stat-value" id="count">0/5</div>
-            <div class="stat-label">Stops</div>
-        </div>
-        <div class="stat">
-            <div class="stat-value money" id="money">₹0</div>
-            <div class="stat-label">Spent</div>
-        </div>
-        <button class="reset-btn" onclick="reset()">Reset</button>
-    </div>
-
-    <div class="next">Next: <span id="next"></span></div>
-
-    <div class="progress">
-        <div class="progress-fill" id="progress"></div>
-    </div>
-</div>
-
-<div class="timeline" id="timeline"></div>
-
-</div>
-
-<script>
-
-const stops = [
-{ id:1, time:"4:00 PM", place:"Pappu Chaat", dish:"Aloo Tikki", price:80, tip:"Crispy start", walk:"10 mins", visited:false },
-{ id:2, time:"4:20 PM", place:"Embassy Snack", dish:"Samosa", price:80, tip:"Spicy bite", walk:"10 mins", visited:false },
-{ id:3, time:"4:45 PM", place:"Nizam’s Roll", dish:"Egg Mutton Roll", price:300, tip:"Main stop (share)", walk:"5 mins", visited:false },
-{ id:4, time:"5:10 PM", place:"Shake Square", dish:"Butterscotch Shake", price:150, tip:"Cool down", walk:"5 mins", visited:false },
-{ id:5, time:"5:25 PM", place:"Odeon Paan", dish:"Fire Paan", price:50, tip:"Digestif end", walk:null, visited:false }
-];
-
-function render() {
-    const timeline = document.getElementById("timeline");
-    timeline.innerHTML = "";
-
-    let spent = 0;
-    let visited = stops.filter(s=>s.visited).length;
-    let nextStop = stops.find(s=>!s.visited);
-
-    stops.forEach(s=>{
-        if(s.visited) spent += s.price;
-
-        const isNext = nextStop && nextStop.id === s.id;
-
-        const el = document.createElement("div");
-        el.className = `stop ${s.visited?"visited":""}`;
-
-        el.innerHTML = `
-        <div class="card ${isNext?"next":""}">
-            <div class="card-content">
-                <div class="time">${s.time}</div>
-                <div class="place">${s.place}</div>
-                <div class="dish">${s.dish} <span class="price">₹${s.price}</span></div>
-                <div class="tip">${s.tip}</div>
+    <div id="app">
+        <div id="home-view" class="view-active">
+            <div class="page-header">
+                <h1>Food Walks</h1>
+                <p>Find your perfect tasting route.</p>
+                
+                <div class="quick-picker">
+                    <button class="picker-btn" onclick="highlightPlan('classic')">🍔 Quick Bite</button>
+                    <button class="picker-btn" onclick="highlightPlan('classic')">🗺️ Full Experience</button>
+                    <button class="picker-btn" onclick="highlightPlan('budget')">💸 Budget</button>
+                    <button class="picker-btn" onclick="highlightPlan('date')">✨ Date</button>
+                </div>
             </div>
-            <input type="checkbox" ${s.visited?"checked":""} onchange="toggle(${s.id})">
+            
+            <div class="home-cards" id="home-cards-container">
+                </div>
         </div>
-        ${s.walk ? `<div class="walk">→ ${s.walk} walk</div>` : ""}
-        `;
 
-        timeline.appendChild(el);
-    });
+        <div id="itinerary-view" class="hidden">
+            
+            <div class="top-nav">
+                <button class="back-btn" onclick="goHome()">
+                    <span style="font-size: 18px; line-height: 1;">←</span> Back
+                </button>
+                <h2 class="itin-title" id="current-itin-title">Walk Title</h2>
+            </div>
 
-    document.getElementById("count").innerText = `${visited}/${stops.length}`;
-    document.getElementById("money").innerText = `₹${spent}`;
-    document.getElementById("progress").style.width = `${(visited/stops.length)*100}%`;
+            <div class="guide-info">
+                <div class="info-pill">
+                    <span class="info-val" id="info-duration">2 Hrs</span>
+                    <span class="info-label">Duration</span>
+                </div>
+                <div class="info-pill">
+                    <span class="info-val" id="info-cost">₹500</span>
+                    <span class="info-label">Est. Cost</span>
+                </div>
+                <div class="info-pill">
+                    <span class="info-val" id="info-start">4:00 PM</span>
+                    <span class="info-label">Start Time</span>
+                </div>
+            </div>
 
-    document.getElementById("next").innerText =
-        nextStop ? `${nextStop.place} (${nextStop.time})` : "Done 🎉";
-}
+            <div class="dashboard">
+                <div class="dash-stats">
+                    <div class="stat-group">
+                        <div class="stat-box">
+                            <div class="stat-value" id="visited-count">0/0</div>
+                            <div class="stat-label">Stops</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value money" id="total-spent">₹0</div>
+                            <div class="stat-label">Spent</div>
+                        </div>
+                    </div>
+                    <button class="reset-btn" onclick="resetWalk()">Reset</button>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
+                <div class="next-stop-container">
+                    📍 Next: <span id="next-stop-name">Loading...</span>
+                </div>
+            </div>
 
-function toggle(id){
-    const s = stops.find(x=>x.id===id);
-    s.visited = !s.visited;
-    render();
-}
+            <button class="start-walk-btn" id="start-walk-btn" onclick="startWalk()">Start Walk →</button>
 
-function reset(){
-    stops.forEach(s=>s.visited=false);
-    render();
-}
+            <div class="timeline" id="timeline-container">
+                </div>
+            
+            <div id="completion-container" class="hidden"></div>
+        </div>
+    </div>
 
-render();
+    <script>
+        // --- 1. Data Structure ---
+        const itineraries = {
+            classic: {
+                id: "classic",
+                title: "CP Classic Walk",
+                description: "The definitive list of iconic street food hits that made Connaught Place famous.",
+                duration: "2.5 Hrs",
+                budget: "₹600 - ₹800",
+                bestTime: "4:00 PM",
+                tag: "Best for first-timers",
+                tagClass: "tag-blue",
+                stops: [
+                    { id: 1, time: "4:00 PM", place: "Pappu Chaat", dish: "Aloo Tikki", price: 80, tip: "Crispy start, ask for extra green chutney", walkTime: "10 mins", visited: false },
+                    { id: 2, time: "4:20 PM", place: "Embassy Snack", dish: "Samosa", price: 80, tip: "Grab quick from the takeaway window", walkTime: "10 mins", visited: false },
+                    { id: 3, time: "4:45 PM", place: "Nizam’s Roll", dish: "Egg Mutton Roll", price: 300, tip: "The main event. Split it so you don't get full", walkTime: "5 mins", visited: false },
+                    { id: 4, time: "5:10 PM", place: "Shake Square", dish: "Butterscotch Shake", price: 150, tip: "Classic thick shake to cool the spices", walkTime: "5 mins", visited: false },
+                    { id: 5, time: "5:25 PM", place: "Odeon Paan", dish: "Fire Paan", price: 50, tip: "Open wide and don't flinch. Perfect digestif", walkTime: null, visited: false }
+                ]
+            },
+            budget: {
+                id: "budget",
+                title: "Budget Bites",
+                description: "Delicious, heavy, and extremely comforting local meals under ₹250 total.",
+                duration: "1.5 Hrs",
+                budget: "Under ₹300",
+                bestTime: "4:00 PM",
+                tag: "Wallet Friendly",
+                tagClass: "tag-green",
+                stops: [
+                    { id: 1, time: "4:00 PM", place: "Hanuman Mandir", dish: "Kachori Sabzi", price: 50, tip: "Warning: Gravy is fiery hot", walkTime: "10 mins", visited: false },
+                    { id: 2, time: "4:25 PM", place: "Jain Chawal Wale", dish: "Rajma Chawal (Half)", price: 90, tip: "Ultimate Delhi comfort food", walkTime: "15 mins", visited: false },
+                    { id: 3, time: "4:50 PM", place: "DePaul's", dish: "Hazelnut Coffee", price: 80, tip: "Drink it from the bottle immediately", walkTime: "10 mins", visited: false },
+                    { id: 4, time: "5:10 PM", place: "Odeon Milan", dish: "Meetha Paan", price: 40, tip: "Sweet finish to cut the heavy meal", walkTime: null, visited: false }
+                ]
+            },
+            date: {
+                id: "date",
+                title: "Date Night Walk",
+                description: "Aesthetic heritage spots, sweet treats, and cozy sharing plates.",
+                duration: "2 Hrs",
+                budget: "₹800 - ₹1200",
+                bestTime: "5:00 PM",
+                tag: "Vibe Check",
+                tagClass: "tag-orange",
+                stops: [
+                    { id: 1, time: "5:00 PM", place: "Wenger's Deli", dish: "Waffles & Coffee", price: 350, tip: "Grab a cozy corner table inside", walkTime: "5 mins", visited: false },
+                    { id: 2, time: "5:40 PM", place: "Wenger's Bakery", dish: "Chocolate Tart", price: 120, tip: "Takeaway to eat while walking", walkTime: "10 mins", visited: false },
+                    { id: 3, time: "6:00 PM", place: "Shake Square", dish: "Thick Shake", price: 150, tip: "Two straws, one bottle", walkTime: "15 mins", visited: false },
+                    { id: 4, time: "6:30 PM", place: "United Coffee House", dish: "Keema Samosa", price: 400, tip: "Sit down, relax, and soak in the heritage", walkTime: null, visited: false }
+                ]
+            }
+        };
 
-</script>
+        // --- 2. State Management ---
+        let activeItineraryKey = null;
 
+        // DOM Elements
+        const homeView = document.getElementById('home-view');
+        const itineraryView = document.getElementById('itinerary-view');
+        const homeCardsContainer = document.getElementById('home-cards-container');
+        
+        const itinTitleEl = document.getElementById('current-itin-title');
+        const infoDuration = document.getElementById('info-duration');
+        const infoCost = document.getElementById('info-cost');
+        const infoStart = document.getElementById('info-start');
+        
+        const timelineContainer = document.getElementById('timeline-container');
+        const visitedCountEl = document.getElementById('visited-count');
+        const totalSpentEl = document.getElementById('total-spent');
+        const nextStopEl = document.getElementById('next-stop-name');
+        const progressBarEl = document.getElementById('progress-bar');
+        
+        const startWalkBtn = document.getElementById('start-walk-btn');
+        const completionContainer = document.getElementById('completion-container');
+
+        // --- 3. Rendering Logic ---
+
+        function renderHome() {
+            homeCardsContainer.innerHTML = '';
+            
+            for (const key in itineraries) {
+                const itin = itineraries[key];
+                const totalStops = itin.stops.length;
+                
+                const card = document.createElement('div');
+                card.className = 'walk-card';
+                card.id = `card-${key}`;
+                card.onclick = () => openItinerary(key);
+                
+                card.innerHTML = `
+                    <div class="walk-tag ${itin.tagClass}">${itin.tag}</div>
+                    <div>
+                        <div class="walk-title">${itin.title}</div>
+                        <div class="walk-desc">${itin.description}</div>
+                    </div>
+                    <div class="walk-meta">
+                        <span>⏱️ ${itin.duration}</span>
+                        <span>💰 ${itin.budget}</span>
+                        <span>📍 ${totalStops} Stops</span>
+                    </div>
+                `;
+                homeCardsContainer.appendChild(card);
+            }
+        }
+
+        function renderItinerary() {
+            if (!activeItineraryKey) return;
+            
+            const currentItin = itineraries[activeItineraryKey];
+            const stopsData = currentItin.stops;
+            
+            // Populate Header Info
+            itinTitleEl.innerText = currentItin.title;
+            infoDuration.innerText = currentItin.duration;
+            infoStart.innerText = currentItin.bestTime;
+            
+            // Calculate total estimated cost
+            const estTotal = stopsData.reduce((sum, stop) => sum + stop.price, 0);
+            infoCost.innerText = `₹${estTotal}`;
+
+            // Identify the first unvisited stop
+            const nextStopObj = stopsData.find(s => !s.visited);
+            const nextStopId = nextStopObj ? nextStopObj.id : null;
+
+            timelineContainer.innerHTML = ''; 
+            let currentSpend = 0;
+
+            stopsData.forEach((stop, index) => {
+                if (stop.visited) {
+                    currentSpend += stop.price;
+                }
+
+                const isNextUp = stop.id === nextStopId;
+                const stopDiv = document.createElement('div');
+                stopDiv.className = `stop ${stop.visited ? 'visited' : ''}`;
+                stopDiv.id = `stop-${stop.id}`;
+                
+                let walkHtml = '';
+                if (stop.walkTime) {
+                    walkHtml = `<div class="walk-time">🚶‍♂️ ${stop.walkTime} walk</div>`;
+                }
+
+                stopDiv.innerHTML = `
+                    <div class="card ${isNextUp ? 'next-up' : ''}">
+                        <div class="card-content">
+                            <div class="time">${stop.time}</div>
+                            <div class="place">${stop.place}</div>
+                            <div class="dish-row">
+                                <span class="dish">${stop.dish}</span>
+                                <span class="price-badge">₹${stop.price}</span>
+                            </div>
+                            <div class="tip">💡 ${stop.tip}</div>
+                        </div>
+                        <div class="checkbox-container" onclick="event.stopPropagation();">
+                            <input type="checkbox" ${stop.visited ? 'checked' : ''} onchange="toggleStop(${stop.id})">
+                        </div>
+                    </div>
+                    ${walkHtml}
+                `;
+                
+                stopDiv.querySelector('.card').onclick = () => toggleStop(stop.id);
+                stopDiv.querySelector('.card').style.cursor = 'pointer';
+
+                timelineContainer.appendChild(stopDiv);
+            });
+
+            // Update Dashboard Stats & Progress Bar
+            const totalStops = stopsData.length;
+            const visitedStops = stopsData.filter(s => s.visited).length;
+            const isComplete = visitedStops === totalStops;
+            
+            visitedCountEl.innerText = `${visitedStops}/${totalStops}`;
+            totalSpentEl.innerText = `₹${currentSpend}`;
+            
+            const progressPercent = (visitedStops / totalStops) * 100;
+            progressBarEl.style.width = `${progressPercent}%`;
+
+            // Update Next Stop Text & Handle Completion
+            if (!isComplete) {
+                nextStopEl.innerText = `${nextStopObj.place} (${nextStopObj.time})`;
+                nextStopEl.style.color = "var(--accent-color)";
+                startWalkBtn.classList.remove('hidden');
+                completionContainer.classList.add('hidden');
+                completionContainer.innerHTML = '';
+            } else {
+                nextStopEl.innerText = "Walk Complete! 🎉";
+                nextStopEl.style.color = "var(--success-color)";
+                startWalkBtn.classList.add('hidden');
+                
+                // Show Completion Card
+                completionContainer.classList.remove('hidden');
+                completionContainer.innerHTML = `
+                    <div class="completion-card">
+                        <div class="completion-icon">🎉</div>
+                        <div class="completion-title">Walk Completed!</div>
+                        <div class="completion-stats">
+                            You explored ${totalStops} spots and spent <span>₹${currentSpend}</span>.
+                        </div>
+                        <button class="try-another-btn" onclick="goHome()">Try another walk</button>
+                    </div>
+                `;
+            }
+        }
+
+        // --- 4. Navigation & Interaction ---
+
+        function highlightPlan(key) {
+            // Remove highlight from all
+            document.querySelectorAll('.walk-card').forEach(el => el.classList.remove('highlight'));
+            
+            // Add highlight to target
+            const targetCard = document.getElementById(`card-${key}`);
+            if (targetCard) {
+                targetCard.classList.add('highlight');
+                // Scroll to card smoothly with offset
+                const yOffset = -20; 
+                const y = targetCard.getBoundingClientRect().top + window.scrollY + yOffset;
+                window.scrollTo({top: y, behavior: 'smooth'});
+            }
+        }
+
+        function openItinerary(key) {
+            activeItineraryKey = key;
+            
+            homeView.classList.remove('view-active');
+            homeView.classList.add('hidden');
+            
+            itineraryView.classList.remove('hidden');
+            setTimeout(() => {
+                itineraryView.classList.add('view-active');
+                renderItinerary();
+                window.scrollTo(0, 0);
+            }, 10);
+        }
+
+        function goHome() {
+            activeItineraryKey = null;
+            
+            itineraryView.classList.remove('view-active');
+            itineraryView.classList.add('hidden');
+            
+            homeView.classList.remove('hidden');
+            setTimeout(() => {
+                homeView.classList.add('view-active');
+                // clear highlights
+                document.querySelectorAll('.walk-card').forEach(el => el.classList.remove('highlight'));
+                window.scrollTo(0, 0);
+            }, 10);
+        }
+
+        function toggleStop(id) {
+            const currentItin = itineraries[activeItineraryKey];
+            const stop = currentItin.stops.find(s => s.id === id);
+            if (stop) {
+                stop.visited = !stop.visited;
+                renderItinerary();
+            }
+        }
+
+        function resetWalk() {
+            const currentItin = itineraries[activeItineraryKey];
+            currentItin.stops.forEach(stop => stop.visited = false);
+            renderItinerary();
+        }
+
+        function startWalk() {
+            const currentItin = itineraries[activeItineraryKey];
+            const firstUnvisited = currentItin.stops.find(s => !s.visited);
+            
+            if (firstUnvisited) {
+                const targetStopId = `stop-${firstUnvisited.id}`;
+                const targetEl = document.getElementById(targetStopId);
+                
+                if (targetEl) {
+                    const cardEl = targetEl.querySelector('.card');
+                    
+                    // Scroll to element with offset
+                    const yOffset = -80; 
+                    const y = targetEl.getBoundingClientRect().top + window.scrollY + yOffset;
+                    window.scrollTo({top: y, behavior: 'smooth'});
+                    
+                    // Add visual highlight class
+                    cardEl.classList.remove('next-up'); // temporarily remove pulse
+                    void cardEl.offsetWidth; // trigger reflow
+                    cardEl.classList.add('scroll-target');
+                    
+                    // Restore original class after animation finishes
+                    setTimeout(() => {
+                        cardEl.classList.remove('scroll-target');
+                        cardEl.classList.add('next-up');
+                    }, 1500);
+                }
+            }
+        }
+
+        // --- 5. Initialization ---
+        renderHome();
+    </script>
 </body>
 </html>
